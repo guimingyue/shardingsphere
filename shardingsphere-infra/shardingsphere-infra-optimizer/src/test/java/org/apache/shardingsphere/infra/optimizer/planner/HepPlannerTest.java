@@ -72,4 +72,54 @@ public class HepPlannerTest extends AbstractSchemaTest {
         planStr = RelOptUtil.dumpPlan("best", best, SqlExplainFormat.TEXT, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
         System.out.println(planStr);
     }
+    
+    @Test
+    public void testConvertFilterToCalc() throws SqlParseException {
+        String sql = "select order_id, user_id,status from t_order where t_order.status='FINISHED'";
+        SqlParser parser = SqlParser.create(sql, SqlParser.config().withLex(Lex.MYSQL));
+        SqlNode sqlNode = parser.parseQuery();
+    
+        RelNode logicalRelNode = relNodeConverter.validateAndConvert(sqlNode);
+    
+        HepProgramBuilder hepProgramBuilder = HepProgram.builder();
+        hepProgramBuilder.addGroupBegin();
+        hepProgramBuilder.addRuleCollection(ImmutableList.of(CoreRules.FILTER_TO_CALC));
+        hepProgramBuilder.addGroupEnd();
+    
+        HepPlanner hepPlanner = new HepPlanner(hepProgramBuilder.build(), null, true, null, RelOptCostImpl.FACTORY);
+        hepPlanner.setRoot(logicalRelNode);
+        RelNode best = hepPlanner.findBestExp();
+    
+        String planStr;
+        planStr = RelOptUtil.dumpPlan("origin", logicalRelNode, SqlExplainFormat.TEXT, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
+        System.out.println(planStr);
+    
+        planStr = RelOptUtil.dumpPlan("best", best, SqlExplainFormat.TEXT, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
+        System.out.println(planStr);
+    }
+    
+    @Test
+    public void testConvertProjectAndFilterToCalc() throws SqlParseException {
+        String sql = "select order_id, user_id,status from t_order where t_order.status='FINISHED'";
+        SqlParser parser = SqlParser.create(sql, SqlParser.config().withLex(Lex.MYSQL));
+        SqlNode sqlNode = parser.parseQuery();
+        
+        RelNode logicalRelNode = relNodeConverter.validateAndConvert(sqlNode);
+        
+        HepProgramBuilder hepProgramBuilder = HepProgram.builder();
+        hepProgramBuilder.addGroupBegin();
+        hepProgramBuilder.addRuleCollection(ImmutableList.of(CoreRules.FILTER_TO_CALC, CoreRules.PROJECT_TO_CALC, CoreRules.CALC_MERGE));
+        hepProgramBuilder.addGroupEnd();
+        
+        HepPlanner hepPlanner = new HepPlanner(hepProgramBuilder.build(), null, true, null, RelOptCostImpl.FACTORY);
+        hepPlanner.setRoot(logicalRelNode);
+        RelNode best = hepPlanner.findBestExp();
+        
+        String planStr;
+        planStr = RelOptUtil.dumpPlan("origin", logicalRelNode, SqlExplainFormat.TEXT, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
+        System.out.println(planStr);
+        
+        planStr = RelOptUtil.dumpPlan("best", best, SqlExplainFormat.TEXT, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
+        System.out.println(planStr);
+    }
 }
