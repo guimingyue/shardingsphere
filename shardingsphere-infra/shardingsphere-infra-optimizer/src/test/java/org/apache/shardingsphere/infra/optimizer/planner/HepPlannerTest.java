@@ -60,14 +60,15 @@ public class HepPlannerTest extends AbstractSchemaTest {
         hepProgramBuilder.addGroupBegin();
         hepProgramBuilder.addRuleCollection(ImmutableList.of(CoreRules.FILTER_INTO_JOIN));
         hepProgramBuilder.addGroupEnd();
+        
+        HepPlanner hepPlanner = new HepPlanner(hepProgramBuilder.build(), null, true, null, RelOptCostImpl.FACTORY);
+        hepPlanner.setRoot(logicalRelNode);
+        RelNode best = hepPlanner.findBestExp();
     
         String planStr;
         planStr = RelOptUtil.dumpPlan("origin", logicalRelNode, SqlExplainFormat.TEXT, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
         System.out.println(planStr);
         
-        HepPlanner hepPlanner = new HepPlanner(hepProgramBuilder.build(), null, true, null, RelOptCostImpl.FACTORY);
-        hepPlanner.setRoot(logicalRelNode);
-        RelNode best = hepPlanner.findBestExp();
         planStr = RelOptUtil.dumpPlan("best", best, SqlExplainFormat.TEXT, SqlExplainLevel.EXPPLAN_ATTRIBUTES);
         System.out.println(planStr);
     }
